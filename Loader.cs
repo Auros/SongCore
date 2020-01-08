@@ -274,7 +274,7 @@ namespace SongCore
                                 var results = Directory.GetFiles(cachedFolder, "info.dat", SearchOption.AllDirectories);
                                 if (results.Length == 0)
                                 {
-                                    Logging.Log("Folder: '" + cachedFolder + "' is missing info.dat files!", LogSeverity.Notice);
+                                    Logging.Log("Folder: '" + cachedFolder + "' is missing info.dat files!", LogSeverity.Debug);
                                     continue;
                                 }
                                 foreach (var result in results)
@@ -342,7 +342,7 @@ namespace SongCore
                         var results = Directory.GetFiles(folder, "info.dat", SearchOption.TopDirectoryOnly);
                         if (results.Length == 0)
                         {
-                            Logging.Log("Folder: '" + folder + "' is missing info.dat files!", LogSeverity.Notice);
+                            Logging.Log("Folder: '" + folder + "' is missing info.dat files!", LogSeverity.Debug);
                             continue;
                         }
 
@@ -439,7 +439,7 @@ namespace SongCore
                                 var results = Directory.GetFiles(folder, "info.dat", SearchOption.TopDirectoryOnly);
                                 if (results.Length == 0)
                                 {
-                                    Logging.Log("Folder: '" + folder + "' is missing info.dat files!", LogSeverity.Notice);
+                                    Logging.Log("Folder: '" + folder + "' is missing info.dat files!", LogSeverity.Debug);
                                     continue;
                                 }
 

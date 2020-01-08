@@ -17,20 +17,20 @@ using IPALogger = IPA.Logging.Logger;
 
 namespace SongCore
 {
-    public class Plugin : IBeatSaberPlugin
+    [Plugin(RuntimeOptions.SingleStartInit)]
+    public class Plugin
     {
         public static string standardCharacteristicName = "Standard";
         public static string oneSaberCharacteristicName = "OneSaber";
         public static string noArrowsCharacteristicName = "NoArrows";
         internal static HarmonyInstance harmony;
-        //     internal static bool ColorsInstalled = false;
         internal static bool PlatformsInstalled = false;
         internal static bool customSongColors;
         internal static bool customSongPlatforms;
         internal static int _currentPlatform = -1;
 
-
-        public void OnApplicationStart()
+        [OnStart]
+        public void OnStart()
         {
             //Delete Old Config
             try
@@ -43,12 +43,15 @@ namespace SongCore
                 Logging.logger.Warn("Failed to delete old config file!");
             }
 
+            SceneManager.activeSceneChanged += OnActiveSceneChanged;
+            SceneManager.sceneLoaded += OnSceneLoaded;
+
             //      ColorsInstalled = Utils.IsModInstalled("Custom Colors") || Utils.IsModInstalled("Chroma");
             PlatformsInstalled = Utils.IsModInstalled("Custom Platforms");
             harmony = HarmonyInstance.Create("com.kyle1413.BeatSaber.SongCore");
-            harmony.PatchAll(System.Reflection.Assembly.GetExecutingAssembly());
+            harmony.PatchAll(Assembly.GetExecutingAssembly());
             //     Collections.LoadExtraSongData();
-            UI.BasicUI.GetIcons();
+            BasicUI.GetIcons();
             BS_Utils.Utilities.BSEvents.levelSelected += BSEvents_levelSelected;
             BS_Utils.Utilities.BSEvents.gameSceneLoaded += BSEvents_gameSceneLoaded;
             BS_Utils.Utilities.BSEvents.menuSceneLoadedFresh += BSEvents_menuSceneLoadedFresh;
@@ -110,10 +113,15 @@ namespace SongCore
 
         }
 
-        public void Init(object thisIsNull, IPALogger pluginLogger)
-        {
+        [Init]
+        public void Init(IPALogger pluginLogger) => Logging.logger = pluginLogger;
+        
 
-            Utilities.Logging.logger = pluginLogger;
+        [OnExit]
+        public void OnExit()
+        {
+            SceneManager.activeSceneChanged -= OnActiveSceneChanged;
+            SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
         public void OnSceneLoaded(Scene scene, LoadSceneMode sceneMode)
@@ -122,11 +130,6 @@ namespace SongCore
             {
                 BSMLSettings.instance.AddSettingsMenu("SongCore", "SongCore.UI.settings.bsml", SCSettings.instance);
             }
-
-        }
-       
-        public void OnSceneUnloaded(Scene scene)
-        {
 
         }
 
@@ -140,7 +143,6 @@ namespace SongCore
                 BS_Utils.Gameplay.Gamemode.Init();
                 if (PlatformsInstalled)
                     CheckForPreviousPlatform();
-
             }
 
             if (nextScene.name == "GameCore")
@@ -157,8 +159,6 @@ namespace SongCore
                 }
                 else
                     Logging.logger.Info("Null custom song extra data");
-
-
             }
         }
 
@@ -209,31 +209,6 @@ namespace SongCore
 
 
         }
-
-        public void OnApplicationQuit()
-        {
-
-        }
-
-        public void OnLevelWasLoaded(int level)
-        {
-
-        }
-
-        public void OnLevelWasInitialized(int level)
-        {
-        }
-
-        public void OnUpdate()
-        {
-
-
-        }
-
-        public void OnFixedUpdate()
-        {
-        }
-
 
         private void CheckCustomSongEnvironment(IDifficultyBeatmap song)
         {
@@ -332,11 +307,13 @@ namespace SongCore
                 else
                 {
                     string customPlatformsFolderPath = Path.Combine(Environment.CurrentDirectory, "CustomPlatforms", downloadData.name);
-                    System.IO.File.WriteAllBytes(@customPlatformsFolderPath + ".plat", www.downloadHandler.data);
+                    File.WriteAllBytes(@customPlatformsFolderPath + ".plat", www.downloadHandler.data);
                     CustomFloorPlugin.PlatformManager.Instance.AddPlatform(customPlatformsFolderPath + ".plat");
                 }
             }
         }
+
+        //internal static bool ColorsInstalled = false;
     }
 }
 
