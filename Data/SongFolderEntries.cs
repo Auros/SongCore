@@ -1,11 +1,8 @@
-﻿using System;
+﻿using SongCore.OverrideClasses;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SongCore.OverrideClasses;
 using System.Xml.Linq;
-using System.Xml;
 namespace SongCore.Data
 {
     public enum FolderLevelPack { CustomLevels, CustomWIPLevels, NewPack };
@@ -109,6 +106,18 @@ namespace SongCore.Data
             }
 
             return result;
+
+        }
+    }
+    public class ModSeperateSongFolder : SeperateSongFolder
+    {
+        public ModSeperateSongFolder(SongFolderEntry folderEntry) : base(folderEntry)
+        {
+
+        }
+
+        public ModSeperateSongFolder(SongFolderEntry folderEntry, UnityEngine.Sprite Image) : base(folderEntry, Image)
+        {
 
         }
     }

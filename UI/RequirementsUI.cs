@@ -2,26 +2,19 @@
 using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.Components;
 using BS_Utils.Utilities;
-using HMUI;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.UI;
 using static BeatSaberMarkupLanguage.Components.CustomListTableData;
 
 namespace SongCore.UI
 {
-    public class RequirementsUI : PersistentSingleton<RequirementsUI>
+    public class RequirementsUI : NotifiableSingleton<RequirementsUI>
     {
         private StandardLevelDetailViewController standardLevel;
 
 
         internal static Config ModPrefs = new Config("SongCore/SongCore");
-        internal Button infoButton;
 
         internal Sprite HaveReqIcon;
         internal Sprite MissingReqIcon;
@@ -29,23 +22,49 @@ namespace SongCore.UI
         internal Sprite MissingSuggestionIcon;
         internal Sprite WarningIcon;
         internal Sprite InfoIcon;
-        internal Sprite MissingCharIcon;
-        internal Sprite LightshowIcon;
-        internal Sprite ExtraDiffsIcon;
-        internal Sprite WIPIcon;
-        internal Sprite FolderIcon;
 
-        [UIComponent("modal")]
-        internal ModalView modal;
+        //Currently selected song data
+        public CustomPreviewBeatmapLevel level;
+        public Data.ExtraSongData songData;
+        public Data.ExtraSongData.DifficultyData diffData;
+        public bool wipFolder;
 
         [UIComponent("list")]
         public CustomListTableData customListTableData;
+
+        private string buttonGlowColor = "none";
+        [UIValue("button-glow")]
+        public string ButtonGlowColor
+        {
+            get => buttonGlowColor;
+            set
+            {
+                buttonGlowColor = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+        private bool buttonInteractable = false;
+        [UIValue("button-interactable")]
+        public bool ButtonInteractable
+        {
+            get => buttonInteractable;
+            set
+            {
+                buttonInteractable = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+        [UIComponent("info-button")]
+        private Transform infoButtonTransform;
 
         internal void Setup()
         {
             GetIcons();
             standardLevel = Resources.FindObjectsOfTypeAll<StandardLevelDetailViewController>().First();
-            BSMLParser.instance.Parse(BeatSaberMarkupLanguage.Utilities.GetResourceContent(Assembly.GetExecutingAssembly(), "SongCore.UI.requirements.bsml"), standardLevel.gameObject, this);
+            BSMLParser.instance.Parse(BeatSaberMarkupLanguage.Utilities.GetResourceContent(Assembly.GetExecutingAssembly(), "SongCore.UI.requirements.bsml"), standardLevel.transform.Find("LevelDetail").gameObject, this);
+            infoButtonTransform.localScale *= 0.7f;//no scale property in bsml as of now so manually scaling it
         }
 
         internal void GetIcons()
@@ -62,19 +81,10 @@ namespace SongCore.UI
                 WarningIcon = Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.Warning.png");
             if (!InfoIcon)
                 InfoIcon = Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.Info.png");
-            if (!MissingCharIcon)
-                MissingCharIcon = Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.MissingChar.png");
-            if (!LightshowIcon)
-                LightshowIcon = Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.Lightshow.png");
-            if (!ExtraDiffsIcon)
-                ExtraDiffsIcon = Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.ExtraDiffsIcon.png");
-            if (!WIPIcon)
-                WIPIcon = Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.squek.png");
-            if (!FolderIcon)
-                FolderIcon = Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.FolderIcon.png");
         }
 
-        internal void ShowRequirements(CustomPreviewBeatmapLevel level, Data.ExtraSongData songData, Data.ExtraSongData.DifficultyData diffData, bool wipFolder)
+        [UIAction("button-click")]
+        internal void ShowRequirements()
         {
             //   suggestionsList.text = "";
 
@@ -151,6 +161,7 @@ namespace SongCore.UI
                 }
             }
             customListTableData.tableView.ReloadData();
+            customListTableData.tableView.ScrollToCellWithIdx(0, HMUI.TableViewScroller.ScrollPositionType.Beginning, false);
 
         }
     }

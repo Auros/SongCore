@@ -1,22 +1,13 @@
-﻿using UnityEngine;
-using System.Linq;
+﻿using SongCore.Data;
+using SongCore.OverrideClasses;
+using SongCore.Utilities;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Xml;
+using System.Linq;
+using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.Networking;
-using UnityEngine.UI;
-using TMPro;
-using System.Threading;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using SongCore.Utilities;
-using SongCore.OverrideClasses;
-using SongCore.Data;
 using LogSeverity = IPA.Logging.Logger.Level;
 
 namespace SongCore
@@ -117,7 +108,7 @@ namespace SongCore
                 {
                     Texture2D defaultCoverTex = _customLevelLoader.GetField<Texture2D>("_defaultPackCoverTexture2D");
                     defaultCoverImage = Sprite.Create(defaultCoverTex, new Rect(0f, 0f,
-                        (float)defaultCoverTex.width, (float)defaultCoverTex.height), new Vector2(0.5f, 0.5f));
+                        defaultCoverTex.width, defaultCoverTex.height), new Vector2(0.5f, 0.5f));
 
                     cachedMediaAsyncLoaderSO = _customLevelLoader.GetField<CachedMediaAsyncLoader>("_cachedMediaAsyncLoaderSO");
                     beatmapCharacteristicCollection = _customLevelLoader.GetField<BeatmapCharacteristicCollectionSO>("_beatmapCharacteristicCollection");
@@ -126,7 +117,7 @@ namespace SongCore
                 {
                     Texture2D defaultCoverTex = Texture2D.blackTexture;
                     defaultCoverImage = Sprite.Create(defaultCoverTex, new Rect(0f, 0f,
-                        (float)defaultCoverTex.width, (float)defaultCoverTex.height), new Vector2(0.5f, 0.5f));
+                        defaultCoverTex.width, defaultCoverTex.height), new Vector2(0.5f, 0.5f));
                 }
             }
 
@@ -153,7 +144,7 @@ namespace SongCore
                 {
 
                     folderEntry.LevelCollection.UpdatePreviewLevels(folderEntry.Levels.Values.OrderBy(l => l.songName).ToArray());
-                    if (folderEntry.Levels.Count > 0)
+                    if (folderEntry.Levels.Count > 0 || folderEntry is ModSeperateSongFolder)
                     {
                         if (!CustomBeatmapLevelPackCollectionSO._customBeatmapLevelPacks.Contains(folderEntry.LevelPack))
                             CustomBeatmapLevelPackCollectionSO.AddLevelPack(folderEntry.LevelPack);
@@ -173,15 +164,16 @@ namespace SongCore
         }
         internal void AttemptReselectCurrentLevelPack(LevelFilteringNavigationController controller)
         {
-            if (controller.GetField<TabBarViewController>("_tabBarViewController").selectedCellNumber != 3) return;
-            var levelPacksView = controller.GetField<LevelPacksViewController>("_levelPacksViewController");
-            if (levelPacksView == null) return;
-            int selectedPackNum = levelPacksView.GetField<int>("_selectedPackNum");
-            IBeatmapLevelPackCollection currentLevelPacksCollection = levelPacksView.GetField<IBeatmapLevelPackCollection>("_levelPackCollection");
+            var tabBarView = controller.GetField<TabBarViewController>("_tabBarViewController");
+            if (tabBarView?.selectedCellNumber != 3) return;
+            var tabBarDatas = controller.GetField<object[]>("_tabBarDatas");
+            if (tabBarDatas == null) return;
+            int selectedPackNum = tabBarDatas[tabBarView.selectedCellNumber].GetField<int>("selectedItem");
+            var currentLevelPacksCollection = tabBarDatas[tabBarView.selectedCellNumber].GetField<IAnnotatedBeatmapLevelCollection[]>("annotatedBeatmapLevelCollections");
             if (currentLevelPacksCollection == null) return;
-            int packCount = currentLevelPacksCollection.beatmapLevelPacks.Length;
+            int packCount = currentLevelPacksCollection.Length;
             if (!(selectedPackNum < packCount)) return;
-            controller.SelectBeatmapLevelPackOrPlayList(currentLevelPacksCollection.beatmapLevelPacks[selectedPackNum], null);
+            controller.SelectBeatmapLevelPackOrPlayList(currentLevelPacksCollection[selectedPackNum] as IBeatmapLevelPack, null);
 
         }
         public void RefreshSongs(bool fullRefresh = true)
@@ -799,15 +791,20 @@ namespace SongCore
                 float previewDuration = saveData.previewDuration;
                 EnvironmentInfoSO environmentSceneInfo = _customLevelLoader.LoadEnvironmentInfo(saveData.environmentName, false);
                 EnvironmentInfoSO allDirectionEnvironmentInfo = _customLevelLoader.LoadEnvironmentInfo(saveData.allDirectionsEnvironmentName, true);
-                List<BeatmapCharacteristicSO> list = new List<BeatmapCharacteristicSO>();
+                List<PreviewDifficultyBeatmapSet> list = new List<PreviewDifficultyBeatmapSet>();
                 foreach (StandardLevelInfoSaveData.DifficultyBeatmapSet difficultyBeatmapSet in saveData.difficultyBeatmapSets)
                 {
-                    BeatmapCharacteristicSO beatmapCharacteristicBySerialiedName = beatmapCharacteristicCollection.GetBeatmapCharacteristicBySerializedName(difficultyBeatmapSet.beatmapCharacteristicName);
-                    if (beatmapCharacteristicBySerialiedName != null)
+                    BeatmapCharacteristicSO beatmapCharacteristicBySerializedName = beatmapCharacteristicCollection.GetBeatmapCharacteristicBySerializedName(difficultyBeatmapSet.beatmapCharacteristicName);
+                    BeatmapDifficulty[] array = new BeatmapDifficulty[difficultyBeatmapSet.difficultyBeatmaps.Length];
+                    for (int j = 0; j < difficultyBeatmapSet.difficultyBeatmaps.Length; j++)
                     {
-                        list.Add(beatmapCharacteristicBySerialiedName);
+                        BeatmapDifficulty beatmapDifficulty;
+                        difficultyBeatmapSet.difficultyBeatmaps[j].difficulty.BeatmapDifficultyFromSerializedName(out beatmapDifficulty);
+                        array[j] = beatmapDifficulty;
                     }
+                    list.Add(new PreviewDifficultyBeatmapSet(beatmapCharacteristicBySerializedName, array));
                 }
+            
                 result = new CustomPreviewBeatmapLevel(defaultCoverImage.texture, saveData, songPath,
                     cachedMediaAsyncLoaderSO, cachedMediaAsyncLoaderSO, levelID, songName, songSubName,
                     songAuthorName, levelAuthorName, beatsPerMinute, songTimeOffset, shuffle, shufflePeriod,

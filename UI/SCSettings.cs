@@ -1,10 +1,4 @@
 ﻿using BeatSaberMarkupLanguage.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using BS_Utils.Utilities;
 
 namespace SongCore.UI
 {
@@ -14,7 +8,7 @@ namespace SongCore.UI
         [UIValue("colors")]
         public bool Colors
         {
-            get => BasicUI.ModPrefs.GetBool("SongCore", "customSongPlatforms", true, true);
+            get => BasicUI.ModPrefs.GetBool("SongCore", "customSongColors", true, true);
             set
             {
                 Plugin.customSongColors = value;
